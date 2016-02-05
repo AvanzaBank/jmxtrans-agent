@@ -113,7 +113,7 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
             return propertiesLoader.loadProperties();
         } catch (Exception e) {
             logger.log(Level.WARNING, "Error when loading properties from loader " + propertiesLoader + ", this source will be ignored", e);
-            return new HashMap<>();
+            return new HashMap<String, String>();
         }
     }
 

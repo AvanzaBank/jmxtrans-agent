@@ -91,8 +91,11 @@ public class UrlOrFilePropertiesLoaderTest {
         Path tmpFile = Files.createTempFile(this.getClass().getSimpleName(), null);
         File file = tmpFile.toFile();
         file.deleteOnExit();
-        try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+        FileOutputStream fileOutputStream = new FileOutputStream(file);
+        try {
             fileOutputStream.write("test=testvalue".getBytes());
+        } finally {
+            fileOutputStream.close();
         }
         return file;
     }

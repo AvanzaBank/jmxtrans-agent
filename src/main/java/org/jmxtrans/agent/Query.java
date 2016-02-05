@@ -169,13 +169,13 @@ public class Query {
     }
 
     private List<String> findAllAttributes(MBeanServer mbeanServer, ObjectName on) {
-        List<String> resolvedAttributes = new ArrayList<>();
+        List<String> resolvedAttributes = new ArrayList<String>();
         // Null or empty attribute specified, collect all attributes
         try {
             for (MBeanAttributeInfo mBeanAttributeInfo : mbeanServer.getMBeanInfo(on).getAttributes()) {
                 resolvedAttributes.add(mBeanAttributeInfo.getName());
             }
-        } catch (IntrospectionException | InstanceNotFoundException | ReflectionException e) {
+        } catch (Exception e) {
             logger.log(Level.WARNING, "Error when finding attributes for ObjectName " + on + ", all attributes will not be collected", e);
         }
         return resolvedAttributes;

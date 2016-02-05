@@ -38,7 +38,7 @@ public class NoPropertiesSourcePropertiesLoader implements PropertiesLoader {
      */
     @Override
     public Map<String, String> loadProperties() {
-        return new HashMap<>();
+        return new HashMap<String, String>();
     }
     
 }

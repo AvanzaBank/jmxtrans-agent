@@ -68,7 +68,7 @@ public class PropertyPlaceholderResolverTest {
     
     @Test
     public void testPropertiesLoaderValue() throws Exception {
-        Map<String, String> props = new HashMap<>();
+        Map<String, String> props = new HashMap<String, String>();
         props.put("foo", "bar");
         PropertyPlaceholderResolver resolver = new PropertyPlaceholderResolver(props);
         assertThat(resolver.resolveString("${foo}"), equalTo("bar"));
@@ -76,7 +76,7 @@ public class PropertyPlaceholderResolverTest {
     
     @Test
     public void testPropertiesLoaderValueOverridesSystemProperty() throws Exception {
-        Map<String, String> props = new HashMap<>();
+        Map<String, String> props = new HashMap<String, String>();
         props.put("foo", "bar");
         try {
             System.setProperty("foo", "baz");

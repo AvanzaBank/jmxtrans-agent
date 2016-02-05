@@ -102,7 +102,7 @@ public class IoUtils {
             File file;
             try {
                 file = new File(new URI(filePath));
-            } catch (URISyntaxException|RuntimeException e) {
+            } catch (Exception e) {
                 throw new IoRuntimeException("Exception parsing '" + filePath + "'", e);
             }
 
@@ -162,7 +162,7 @@ public class IoUtils {
                 }
                 return dBuilder.parse(xmlFile);
             }
-        } catch (ParserConfigurationException | SAXException | IOException e) {
+        } catch (Exception e) {
             throw new IoRuntimeException(e);
         }
     }

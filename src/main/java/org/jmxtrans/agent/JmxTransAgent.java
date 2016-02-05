@@ -126,7 +126,7 @@ public class JmxTransAgent {
 
                     // MBEANS
                     Set<ObjectInstance> objectInstances = ManagementFactory.getPlatformMBeanServer().queryMBeans(null, null);
-                    List<ObjectName> objectNames = new ArrayList<>();
+                    List<ObjectName> objectNames = new ArrayList<ObjectName>();
                     for (ObjectInstance objectInstance : objectInstances) {
                         objectNames.add(objectInstance.getObjectName());
                     }

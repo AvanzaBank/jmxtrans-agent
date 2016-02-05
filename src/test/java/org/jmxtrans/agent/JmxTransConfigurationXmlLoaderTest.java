@@ -179,7 +179,7 @@ public class JmxTransConfigurationXmlLoaderTest {
             
             @Override
             public Map<String, String> loadProperties() {
-                HashMap<String, String> m = new HashMap<>();
+                HashMap<String, String> m = new HashMap<String, String>();
                 m.put("jmxtrans.agent.collect.interval", "999");
                 return m;
             }

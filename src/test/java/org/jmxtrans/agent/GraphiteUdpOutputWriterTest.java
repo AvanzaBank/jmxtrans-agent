@@ -94,7 +94,7 @@ public class GraphiteUdpOutputWriterTest {
     }
 
     private Map<String, String> testSettings() throws IOException {
-        Map<String, String> settings = new HashMap<>();
+        Map<String, String> settings = new HashMap<String, String>();
         settings.put("host", "127.0.0.1");
         settings.put("port", "" + udpServer.getPort());
         settings.put("namePrefix", "foo.");
@@ -133,7 +133,7 @@ public class GraphiteUdpOutputWriterTest {
 
     private static class UdpServer implements TestRule {
 
-        private List<String> receivedMessages = new ArrayList<>();
+        private List<String> receivedMessages = new ArrayList<String>();
         private DatagramChannel channel;
 
         public void openChannel() throws Exception {

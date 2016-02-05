@@ -60,7 +60,7 @@ public class UrlOrFilePropertiesLoader implements PropertiesLoader {
     }
 
     private Map<String, String> convertToMap(Properties properties) {
-        Map<String, String> m = new HashMap<>();
+        Map<String, String> m = new HashMap<String, String>();
         for (Object key : properties.keySet()) {
             if (!(key instanceof String)) {
                 throw new IllegalArgumentException("Properties key is not string");
@@ -98,8 +98,11 @@ public class UrlOrFilePropertiesLoader implements PropertiesLoader {
         if (!file.exists()) {
             throw new IllegalArgumentException("Properties file '" + file.getAbsolutePath() + "' not found");
         }
-        try (InputStream stream = new FileInputStream(file)) {
+        InputStream stream = new FileInputStream(file);
+        try  {
             properties.load(stream);
+        } finally {
+            stream.close();
         }
     }
 
@@ -109,16 +112,22 @@ public class UrlOrFilePropertiesLoader implements PropertiesLoader {
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(15000);
         connection.connect();
-        try (InputStream stream = connection.getInputStream()) {
+        InputStream stream = connection.getInputStream();
+        try {
             properties.load(stream);
+        } finally {
+            stream.close();
         }
     }
 
     private void loadFromClasspath(Properties properties) throws IOException {
         String classpathResourcePath = propertiesPath.substring("classpath:".length());
-        try (InputStream in = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(classpathResourcePath)) {
+        InputStream in = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(classpathResourcePath);
+        try  {
             properties.load(in);
+        } finally {
+            in.close();
         }
     }
 
