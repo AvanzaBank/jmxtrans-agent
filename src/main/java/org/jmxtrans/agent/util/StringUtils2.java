@@ -50,7 +50,7 @@ public class StringUtils2 {
         }
         String[] splits = delimitedString.split("[,;\\n]");
 
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
 
         for (String split : splits) {
             split = split.trim();
@@ -104,7 +104,7 @@ public class StringUtils2 {
         Preconditions2.checkNotNull(delimiter, "given delimiter can not be null");
 
         StringTokenizer st = new StringTokenizer(str, delimiter);
-        List<String> tokens = new ArrayList<String>();
+        List<String> tokens = new ArrayList<>();
 
         while (st.hasMoreTokens()) {
             tokens.add(st.nextToken());
@@ -173,4 +173,20 @@ public class StringUtils2 {
             return str.substring(0, max - 3) + "...";
         }
     }
+
+    /**
+     * if the given string is {@code null}, return {@code ""}, else return {@link String#trim()}.
+     *
+     * @param str the string to trim
+     * @return the trimmed string
+     */
+    @Nonnull
+    public static String trimToEmpty(@Nullable String str) {
+        if (str == null) {
+            return "";
+        } else {
+            return str.trim();
+        }
+    }
+
 }

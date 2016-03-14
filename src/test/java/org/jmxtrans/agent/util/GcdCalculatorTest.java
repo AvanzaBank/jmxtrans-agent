@@ -21,36 +21,43 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-package org.jmxtrans.agent;
+package org.jmxtrans.agent.util;
 
-import org.jmxtrans.agent.util.StringUtils2;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import org.junit.Test;
 
 /**
- * @author <a href="mailto:cleclerc@cloudbees.com">Cyrille Le Clerc</a>
+ * @author Kristoffer Erlandsson
  */
-public class ConsoleOutputWriter extends AbstractOutputWriter implements OutputWriter {
+public class GcdCalculatorTest {
 
-    private String metricPathPrefix;
-
-    @Override
-    public void postConstruct(@Nonnull Map<String, String> settings) {
-
-        this.metricPathPrefix = StringUtils2.trimToEmpty(settings.get("namePrefix"));
+    @Test(expected=IllegalArgumentException.class)
+    public void emptyList() throws Exception {
+        GcdCalculator.gcd(new ArrayList<Long>());
     }
 
-    @Override
-    public void writeQueryResult(@Nonnull String name, @Nullable String type, @Nullable Object value) {
-        System.out.println(metricPathPrefix + name + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
+    @Test
+    public void oneNumber() throws Exception {
+        assertThat(GcdCalculator.gcd(Arrays.asList(3l)), equalTo(3l));
     }
 
-    @Override
-    public void writeInvocationResult(@Nonnull String invocationName, @Nullable Object value) throws IOException {
-        System.out.println(metricPathPrefix + invocationName + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
+    @Test
+    public void twoNumbers() throws Exception {
+        assertThat(GcdCalculator.gcd(Arrays.asList(9l, 3l)), equalTo(3l));
+    }
+
+    @Test
+    public void manyNumbers() throws Exception {
+        assertThat(GcdCalculator.gcd(Arrays.asList(18l, 27l, 81l, 54l)), equalTo(9l));
+    }
+    
+    @Test
+    public void primes() throws Exception {
+        assertThat(GcdCalculator.gcd(Arrays.asList(7l, 17l)), equalTo(1l));
     }
 }

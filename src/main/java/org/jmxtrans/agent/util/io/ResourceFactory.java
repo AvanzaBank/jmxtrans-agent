@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 the original author or authors
+ * Copyright (c) 2010-2016 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -19,38 +19,32 @@
  * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
-package org.jmxtrans.agent;
 
-import org.jmxtrans.agent.util.StringUtils2;
+package org.jmxtrans.agent.util.io;
+
+import org.jmxtrans.agent.util.Preconditions2;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:cleclerc@cloudbees.com">Cyrille Le Clerc</a>
  */
-public class ConsoleOutputWriter extends AbstractOutputWriter implements OutputWriter {
+public class ResourceFactory {
 
-    private String metricPathPrefix;
-
-    @Override
-    public void postConstruct(@Nonnull Map<String, String> settings) {
-
-        this.metricPathPrefix = StringUtils2.trimToEmpty(settings.get("namePrefix"));
+    @Nonnull
+    public static Resource newResource(@Nonnull String path) {
+        Preconditions2.checkNotNull(path, "Given 'path' cannot be null");
+        if (path.startsWith("classpath:")) {
+            return new ClasspathResource(path);
+        } else if (path.contains("://")) {
+            return new UrlResource(path);
+        } else {
+            return new FileResource(path);
+        }
     }
 
-    @Override
-    public void writeQueryResult(@Nonnull String name, @Nullable String type, @Nullable Object value) {
-        System.out.println(metricPathPrefix + name + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
-    }
+    private ResourceFactory() {
 
-    @Override
-    public void writeInvocationResult(@Nonnull String invocationName, @Nullable Object value) throws IOException {
-        System.out.println(metricPathPrefix + invocationName + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
     }
 }

@@ -23,34 +23,40 @@
  */
 package org.jmxtrans.agent;
 
-import org.jmxtrans.agent.util.StringUtils2;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import javax.management.MBeanServer;
+
 /**
- * @author <a href="mailto:cleclerc@cloudbees.com">Cyrille Le Clerc</a>
+ * Collector that keeps track of when it was last run and which interval it needs to be run at.
+ * 
+ * @author Kristoffer Erlandsson
  */
-public class ConsoleOutputWriter extends AbstractOutputWriter implements OutputWriter {
+public class TimeTrackingCollector {
+    private Collector collector;
+    private long lastRun = Long.MIN_VALUE;
+    private long collectIntervalMillis;
 
-    private String metricPathPrefix;
-
-    @Override
-    public void postConstruct(@Nonnull Map<String, String> settings) {
-
-        this.metricPathPrefix = StringUtils2.trimToEmpty(settings.get("namePrefix"));
+    private static long currentMillis() {
+        // Use nanoTime to ensure that events such as daylight savings do not affect the duration calculation.
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
     }
 
-    @Override
-    public void writeQueryResult(@Nonnull String name, @Nullable String type, @Nullable Object value) {
-        System.out.println(metricPathPrefix + name + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
+    public TimeTrackingCollector(Collector collector, long collectIntervalMillis) {
+        this.collector = collector;
+        this.collectIntervalMillis = collectIntervalMillis;
     }
 
-    @Override
-    public void writeInvocationResult(@Nonnull String invocationName, @Nullable Object value) throws IOException {
-        System.out.println(metricPathPrefix + invocationName + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
+    public void collectIfEnoughTimeHasPassed(MBeanServer mbeanServer, OutputWriter outputWriter) {
+        long currentMillis = currentMillis();
+        if (currentMillis >= lastRun + collectIntervalMillis) {
+            lastRun = currentMillis;
+            collector.collectAndExport(mbeanServer, outputWriter);
+        }
     }
+
+    public long getCollectIntervalMillis() {
+        return collectIntervalMillis;
+    }
+
 }

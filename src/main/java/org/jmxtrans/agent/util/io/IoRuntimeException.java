@@ -23,12 +23,37 @@
  */
 package org.jmxtrans.agent.util.io;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 /**
  * @author <a href="mailto:cleclerc@cloudbees.com">Cyrille Le Clerc</a>
  */
 public class IoRuntimeException extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * This method returns an instance {@link IoRuntimeException}.
+     *
+     * Inspired by {@code com.google.common.base.Throwables#propagate(java.lang.Throwable)}.
+     * <pre>
+     *     try {
+     *         ...
+     *     } catch (IOException e) {
+     *         throw IoRuntimeException.propagate(e);
+     *     }
+     * </pre>
+     * @param e
+     */
+    public static IoRuntimeException propagate(IOException e) {
+        if (e instanceof FileNotFoundException) {
+            return new FileNotFoundRuntimeException(e);
+        } else {
+            return new IoRuntimeException(e);
+        }
+    }
+
     public IoRuntimeException() {
         super();
     }

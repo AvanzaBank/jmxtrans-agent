@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 the original author or authors
+ * Copyright (c) 2010-2016 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -19,38 +19,41 @@
  * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
-package org.jmxtrans.agent;
 
-import org.jmxtrans.agent.util.StringUtils2;
+package org.jmxtrans.agent.util.io;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertThat;
 
 /**
  * @author <a href="mailto:cleclerc@cloudbees.com">Cyrille Le Clerc</a>
  */
-public class ConsoleOutputWriter extends AbstractOutputWriter implements OutputWriter {
+public class ClasspathResourceTest {
 
-    private String metricPathPrefix;
+    @Test
+    public void classpath_resource_exists() throws Exception {
+        ClasspathResource resource = new ClasspathResource("classpath://org/jmxtrans/agent/util/io/classpath-resource.txt");
+        assertThat(resource.exists(), is(true));
 
-    @Override
-    public void postConstruct(@Nonnull Map<String, String> settings) {
+        assertThat(resource.lastModified(), greaterThan(0L));
+        File actualFile = resource.getFile();
+        assertThat(actualFile, notNullValue());
 
-        this.metricPathPrefix = StringUtils2.trimToEmpty(settings.get("namePrefix"));
-    }
+        String expected = "hello world";
+        InputStream in = resource.getInputStream();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IoUtils.copy(in, baos);
+        String actual = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+        assertThat(actual, is(expected));
 
-    @Override
-    public void writeQueryResult(@Nonnull String name, @Nullable String type, @Nullable Object value) {
-        System.out.println(metricPathPrefix + name + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
-    }
-
-    @Override
-    public void writeInvocationResult(@Nonnull String invocationName, @Nullable Object value) throws IOException {
-        System.out.println(metricPathPrefix + invocationName + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
     }
 }

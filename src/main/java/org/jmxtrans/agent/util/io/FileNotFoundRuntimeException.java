@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 the original author or authors
+ * Copyright (c) 2010-2016 the original author or authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -19,38 +19,33 @@
  * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
-package org.jmxtrans.agent;
 
-import org.jmxtrans.agent.util.StringUtils2;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+package org.jmxtrans.agent.util.io;
 
 /**
  * @author <a href="mailto:cleclerc@cloudbees.com">Cyrille Le Clerc</a>
  */
-public class ConsoleOutputWriter extends AbstractOutputWriter implements OutputWriter {
+public class FileNotFoundRuntimeException extends IoRuntimeException {
 
-    private String metricPathPrefix;
+    private static final long serialVersionUID = 1L;
 
-    @Override
-    public void postConstruct(@Nonnull Map<String, String> settings) {
-
-        this.metricPathPrefix = StringUtils2.trimToEmpty(settings.get("namePrefix"));
+    public FileNotFoundRuntimeException() {
     }
 
-    @Override
-    public void writeQueryResult(@Nonnull String name, @Nullable String type, @Nullable Object value) {
-        System.out.println(metricPathPrefix + name + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
+    public FileNotFoundRuntimeException(String message) {
+        super(message);
     }
 
-    @Override
-    public void writeInvocationResult(@Nonnull String invocationName, @Nullable Object value) throws IOException {
-        System.out.println(metricPathPrefix + invocationName + " " + value + " " + TimeUnit.SECONDS.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
+    public FileNotFoundRuntimeException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public FileNotFoundRuntimeException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
+
+    public FileNotFoundRuntimeException(Throwable cause) {
+        super(cause);
     }
 }

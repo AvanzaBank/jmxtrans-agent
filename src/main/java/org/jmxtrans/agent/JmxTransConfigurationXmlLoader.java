@@ -37,7 +37,9 @@ import org.jmxtrans.agent.properties.NoPropertiesSourcePropertiesLoader;
 import org.jmxtrans.agent.properties.PropertiesLoader;
 import org.jmxtrans.agent.util.Preconditions2;
 import org.jmxtrans.agent.util.PropertyPlaceholderResolver;
+import org.jmxtrans.agent.util.io.IoRuntimeException;
 import org.jmxtrans.agent.util.io.IoUtils;
+import org.jmxtrans.agent.util.io.Resource;
 import org.jmxtrans.agent.util.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -52,15 +54,16 @@ import javax.annotation.Nonnull;
  */
 public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoader {
 
+    private static final String COLLECT_INTERVAL_NAME = "collectIntervalInSeconds";
     private static final Pattern ATTRIBUTE_SPLIT_PATTERN = Pattern.compile("\\s*,\\s*");
     private Logger logger = Logger.getLogger(getClass().getName());
     private final PropertiesLoader propertiesLoader;
-    
-    @Nonnull
-    private final String configurationFilePath;
 
-    public JmxTransConfigurationXmlLoader(@Nonnull String configurationFilePath, PropertiesLoader propertiesLoader) {
-        this.configurationFilePath = Preconditions2.checkNotNull(configurationFilePath, "configurationFilePath can not be null");
+    @Nonnull
+    private final Resource configurationResource;
+
+    public JmxTransConfigurationXmlLoader(@Nonnull Resource configurationResource, PropertiesLoader propertiesLoader) {
+        this.configurationResource = Preconditions2.checkNotNull(configurationResource, "configurationResource can not be null");
         this.propertiesLoader = propertiesLoader;
     }
 
@@ -68,28 +71,32 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
      * Creates a JmxTransExporterBuilder with a PropertyLoader that does not use an
      * external properties source.
      */
-    public JmxTransConfigurationXmlLoader(@Nonnull String configurationFilePath) {
-        this(configurationFilePath, new NoPropertiesSourcePropertiesLoader());
+    public JmxTransConfigurationXmlLoader(@Nonnull Resource configurationResource) {
+        this(configurationResource, new NoPropertiesSourcePropertiesLoader());
     }
 
     @Override
     public JmxTransExporterConfiguration loadConfiguration() {
-        return build(IoUtils.getFileAsDocument(configurationFilePath));
+        return build(IoUtils.getFileAsDocument(configurationResource));
     }
 
     @Override
     public long lastModified() {
-        return IoUtils.getFileLastModificationDate(configurationFilePath);
+        try {
+            return configurationResource.lastModified();
+        } catch (IoRuntimeException e) {
+            return 0L;
+        }
     }
 
     protected JmxTransExporterConfiguration build(Document document) {
         Element rootElement = document.getDocumentElement();
 
-        Map<String, String> loadedProperties = loadPropertiesOrEmptyOnError();
+        Map<String, String> loadedProperties = loadPropertiesOrEmptyOnException();
         PropertyPlaceholderResolver resolver = new PropertyPlaceholderResolver(loadedProperties);
         JmxTransExporterConfiguration jmxTransExporterConfiguration = new JmxTransExporterConfiguration(document);
 
-        Integer collectInterval = getIntegerElementValueOrNullIfNotSet(rootElement, "collectIntervalInSeconds", resolver);
+        Integer collectInterval = getIntegerElementValueOrNullIfNotSet(rootElement, COLLECT_INTERVAL_NAME, resolver);
         if (collectInterval != null) {
             jmxTransExporterConfiguration.withCollectInterval(collectInterval, TimeUnit.SECONDS);
         }
@@ -108,7 +115,8 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
         return jmxTransExporterConfiguration;
     }
 
-    private Map<String, String> loadPropertiesOrEmptyOnError() {
+    @Nonnull
+    private Map<String, String> loadPropertiesOrEmptyOnException() {
         try {
             return propertiesLoader.loadProperties();
         } catch (Exception e) {
@@ -143,7 +151,7 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
                 try {
                     return Integer.parseInt(lastStringValue);
                 } catch (NumberFormatException e) {
-                    throw new IllegalStateException("Invalid <" + elementName +"> value '" + lastStringValue + "', integer expected", e);
+                    throw new IllegalStateException("Invalid <" + elementName + "> value '" + lastStringValue + "', integer expected", e);
                 }
         }
     }
@@ -165,8 +173,9 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
                         ", attributes=" + attributes + ", resultAlias=" + resultAlias);
 
             }
+            Integer collectInterval = intAttributeOrNull(queryElement, COLLECT_INTERVAL_NAME);
 
-            configuration.withQuery(objectName, attributes, key, position, type, resultAlias);
+            configuration.withQuery(objectName, attributes, key, position, type, resultAlias, collectInterval);
         }
     }
 
@@ -180,8 +189,8 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
         if (!attribute.isEmpty()) {
             return Collections.singletonList(attribute);
         } else {
-           String[] splitAttributes = ATTRIBUTE_SPLIT_PATTERN.split(attributes);
-           return Arrays.asList(splitAttributes);
+            String[] splitAttributes = ATTRIBUTE_SPLIT_PATTERN.split(attributes);
+            return Arrays.asList(splitAttributes);
         }
     }
 
@@ -199,8 +208,21 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
             String objectName = invocationElement.getAttribute("objectName");
             String operation = invocationElement.getAttribute("operation");
             String resultAlias = invocationElement.getAttribute("resultAlias");
+            Integer collectInterval = intAttributeOrNull(invocationElement, COLLECT_INTERVAL_NAME);
 
-            configuration.withInvocation(objectName, operation, resultAlias);
+            configuration.withInvocation(objectName, operation, resultAlias, collectInterval);
+        }
+    }
+
+    private Integer intAttributeOrNull(Element element, String attributeName) {
+        String value = element.getAttribute(attributeName);
+        if (value.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Attribute '" + attributeName + "' must be an integer", e);
         }
     }
 
@@ -221,7 +243,7 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
 
                 try {
                     resultNameStrategy = (ResultNameStrategy) Class.forName(outputWriterClass).newInstance();
-                    Map<String, String> settings = new HashMap<String, String>();
+                    Map<String, String> settings = new HashMap<>();
                     NodeList settingsNodeList = resultNameStrategyElement.getElementsByTagName("*");
                     for (int j = 0; j < settingsNodeList.getLength(); j++) {
                         Element settingElement = (Element) settingsNodeList.item(j);
@@ -241,7 +263,7 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
 
     private void buildOutputWriters(Element rootElement, JmxTransExporterConfiguration configuration, PropertyPlaceholderResolver placeholderResolver) {
         NodeList outputWriterNodeList = rootElement.getElementsByTagName("outputWriter");
-        List<OutputWriter> outputWriters = new ArrayList<OutputWriter>();
+        List<OutputWriter> outputWriters = new ArrayList<>();
 
         for (int i = 0; i < outputWriterNodeList.getLength(); i++) {
             Element outputWriterElement = (Element) outputWriterNodeList.item(i);
@@ -252,7 +274,7 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
             OutputWriter outputWriter;
             try {
                 outputWriter = (OutputWriter) Class.forName(outputWriterClass).newInstance();
-                Map<String, String> settings = new HashMap<String, String>();
+                Map<String, String> settings = new HashMap<>();
                 NodeList settingsNodeList = outputWriterElement.getElementsByTagName("*");
                 for (int j = 0; j < settingsNodeList.getLength(); j++) {
                     Element settingElement = (Element) settingsNodeList.item(j);
@@ -282,7 +304,7 @@ public class JmxTransConfigurationXmlLoader implements JmxTransConfigurationLoad
     @Override
     public String toString() {
         return "JmxTransConfigurationXmlLoader{" +
-                "configurationFilePath='" + configurationFilePath + '\'' +
+                "configurationResource='" + configurationResource + '\'' +
                 '}';
     }
 }
